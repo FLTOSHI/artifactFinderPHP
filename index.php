@@ -8,6 +8,44 @@ $anomalies = include 'anomalies.php';
 <head>
     <meta charset="UTF-8">
     <title>Искалка артефактов</title>
+    <script>
+        // Передаем данные локаций с аномалиями в JS
+        const locationsData = <?php echo json_encode($locations, JSON_UNESCAPED_UNICODE); ?>;
+        window.addEventListener('DOMContentLoaded', function() {
+            const locationSelect = document.getElementById('location');
+            const anomalySelect = document.getElementById('anomaly');
+
+            function clearAnomalies() {
+                anomalySelect.innerHTML = '<option value="" disabled selected>Сначала выберите локацию</option>';
+                anomalySelect.disabled = true;
+            }
+
+            locationSelect.addEventListener('change', function() {
+                const selectedLocation = locationSelect.value;
+                anomalySelect.innerHTML = '';
+                let found = false;
+                locationsData.forEach(loc => {
+                    if (loc.name === selectedLocation) {
+                        found = true;
+                        if (loc.sublocations && loc.sublocations.length > 0) {
+                            loc.sublocations.forEach(sub => {
+                                let text = sub.name + ' (' + sub.anomaly_type + (sub.artifacts !== null ? ', артефактов: ' + sub.artifacts : '') + ')';
+                                let opt = document.createElement('option');
+                                opt.value = sub.name;
+                                opt.textContent = text;
+                                anomalySelect.appendChild(opt);
+                            });
+                            anomalySelect.disabled = false;
+                        } else {
+                            clearAnomalies();
+                        }
+                    }
+                });
+                if (!found) clearAnomalies();
+            });
+            clearAnomalies();
+        });
+    </script>
 </head>
 <body>
 <h1>Добро пожаловать.</h1>
@@ -25,41 +63,38 @@ $anomalies = include 'anomalies.php';
     <label for="name">Навык «Аномалии»:</label>
     <input type="number" min="0" max="13" placeholder="13" id="anomalies" name="anomalies" required><br>
 
-    <label for="anomaly">Аномалия:</label>
-    <select id="anomaly" name="anomaly">
-        <?php foreach ($anomalies as $type => $list): ?>
-            <optgroup label="<?= htmlspecialchars($type) ?>">
-                <?php foreach ($list as $anomaly): ?>
-                    <option value="<?= htmlspecialchars($anomaly) ?>">
-                        <?= htmlspecialchars($anomaly) ?>
-                    </option>
-                <?php endforeach; ?>
-            </optgroup>
-        <?php endforeach; ?>
-    </select><br>
-
-    <label for="detector">Детектор:</label>
-    <select id="detector" name="detector" required>
-        <?php foreach ($detectors as $name => $data): ?>
-            <option value="<?= htmlspecialchars($name) ?>"
-                    data-tiers="<?= htmlspecialchars(implode(',', $data['tiers'])) ?>">
-                <?= htmlspecialchars($name) ?> (<?= htmlspecialchars($data['description']) ?>)
+    <label for="location">Локация:</label>
+    <select id="location" name="location" required>
+        <option value="" disabled selected>Выберите локацию</option>
+        <?php foreach ($locations as $loc): ?>
+            <option value="<?= htmlspecialchars($loc['name']) ?>">
+                <?= htmlspecialchars($loc['name']) ?>
             </option>
         <?php endforeach; ?>
     </select><br>
 
-    <label for="location">Локация:</label>
-    <select id="location" name="location" required>
-        <option value="" disabled selected>Выберите локацию</option>
+    <label for="anomaly">Аномальное поле:</label>
+    <select id="anomaly" name="anomaly" disabled required>
+        <option value="" disabled selected>Сначала выберите локацию</option>
+    </select><br>
 
-        <?php foreach ($locations as $tier => $loc_list): ?>
-            <optgroup label="Тир <?= substr($tier, -1) ?>">
-                <?php foreach ($loc_list as $location): ?>
-                    <option value="<?= htmlspecialchars($location) ?>">
-                        <?= htmlspecialchars($location) ?>
-                    </option>
-                <?php endforeach; ?>
-            </optgroup>
+    <label for="anomaly_detector">Детектор аномалий:</label>
+    <select id="anomaly_detector" name="anomaly_detector" required>
+        <option value="" disabled selected>Выберите детектор аномалий</option>
+        <?php foreach ($detectors['anomaly_detectors'] as $det): ?>
+            <option value="<?= htmlspecialchars($det['name']) ?>">
+                <?= htmlspecialchars($det['name']) ?> (<?= htmlspecialchars($det['description']) ?>)
+            </option>
+        <?php endforeach; ?>
+    </select><br>
+
+    <label for="artifact_detector">Детектор артефактов:</label>
+    <select id="artifact_detector" name="artifact_detector" required>
+        <option value="" disabled selected>Выберите детектор артефактов</option>
+        <?php foreach ($detectors['artifact_detectors'] as $det): ?>
+            <option value="<?= htmlspecialchars($det['name']) ?>">
+                <?= htmlspecialchars($det['name']) ?> (<?= htmlspecialchars($det['description']) ?>)
+            </option>
         <?php endforeach; ?>
     </select><br>
 
